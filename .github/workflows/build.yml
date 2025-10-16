@@ -1,0 +1,32 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install Flask==3.0.0 ezdxf==1.4.2 pyinstaller==6.1.0
+    
+    - name: Build EXE
+      run: |
+        pyinstaller --onefile --add-data "templates;templates" --add-data "input;input" --name "木模板开料机程序" 简化客户版.py
+    
+    - name: Upload EXE
+      uses: actions/upload-artifact@v3
+      with:
+        name: 木模板开料机程序
+        path: dist/木模板开料机程序.exe
