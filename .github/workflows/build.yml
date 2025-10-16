@@ -28,5 +28,5 @@ jobs:
     - name: Upload EXE
       uses: actions/upload-artifact@v4
       with:
-        name: 木模板开料机程序
+        name: wood-cutting-machine
         path: dist/木模板开料机程序.exe
