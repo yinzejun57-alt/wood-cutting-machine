@@ -23,7 +23,7 @@ jobs:
     
     - name: Build EXE
       run: |
-        pyinstaller --onefile --add-data "templates;templates" --add-data "input;input" --name "木模板开料机程序" 简化客户版.py
+        pyinstaller --onefile --add-data "templates;templates" --add-data "app.py;." --name "木模板开料机程序" 客户打包版.py
     
     - name: Upload EXE
       uses: actions/upload-artifact@v4

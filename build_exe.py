@@ -48,13 +48,12 @@ def create_pyinstaller_spec():
     spec_content = '''# -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['简化客户版.py'],
+    ['客户打包版.py'],
     pathex=[],
     binaries=[],
     datas=[
         ('templates', 'templates'),
-        ('input', 'input'),
-        ('客户版使用指南.txt', '.'),
+        ('app.py', '.'),
     ],
     hiddenimports=[
         'flask',
