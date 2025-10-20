@@ -48,12 +48,11 @@ def create_pyinstaller_spec():
     spec_content = '''# -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['客户打包版.py'],
+    ['all_in_one.py'],
     pathex=[],
     binaries=[],
     datas=[
         ('templates', 'templates'),
-        ('app.py', '.'),
     ],
     hiddenimports=[
         'flask',
