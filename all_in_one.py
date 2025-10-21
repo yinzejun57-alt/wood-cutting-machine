@@ -427,14 +427,54 @@ def download_file_api(filename):
         return jsonify({'error': str(e)}), 500
 
 # ============= 启动函数 =============
-def open_browser_delayed(url):
-    """延迟打开浏览器"""
-    time.sleep(3)
-    print(f"正在打开浏览器: {url}")
+def check_port_available(port):
+    """检查端口是否可用"""
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        webbrowser.open(url)
-    except:
-        print("无法自动打开浏览器，请手动访问上述地址")
+        sock.bind(('127.0.0.1', port))
+        sock.close()
+        return True
+    except OSError:
+        return False
+
+def find_available_port(start_port=5001, max_attempts=10):
+    """查找可用端口"""
+    for port in range(start_port, start_port + max_attempts):
+        if check_port_available(port):
+            return port
+    return None
+
+def wait_for_server(port, timeout=10):
+    """等待服务器启动"""
+    import socket
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex(('127.0.0.1', port))
+            sock.close()
+            if result == 0:
+                return True
+        except:
+            pass
+        time.sleep(0.5)
+    return False
+
+def open_browser_when_ready(url, port):
+    """等待服务器就绪后打开浏览器"""
+    print("等待服务器启动...")
+    if wait_for_server(port, timeout=15):
+        print(f"服务器已就绪，正在打开浏览器: {url}")
+        time.sleep(1)
+        try:
+            webbrowser.open(url)
+            print("浏览器已打开，如果没有自动跳转，请手动访问上述地址")
+        except Exception as e:
+            print(f"无法自动打开浏览器: {e}")
+            print("请手动打开浏览器并访问上述地址")
+    else:
+        print("警告: 服务器启动超时，请检查命令行窗口的错误信息")
 
 def main():
     """主函数"""
@@ -451,37 +491,67 @@ def main():
         pass
     
     if final_files:
-        print(f"input目录中有 {len(final_files)} 个DXF文件可供测试")
+        print(f"\ninput目录中有 {len(final_files)} 个DXF文件可供测试")
     else:
-        print("input目录为空，请通过Web界面上传DXF文件")
+        print("\ninput目录为空，请通过Web界面上传DXF文件")
     
-    print("\n正在启动Web服务器...")
+    # 检查并选择可用端口
+    print("\n正在检查端口...")
+    port = find_available_port(5001, 10)
+    
+    if port is None:
+        print("\n" + "=" * 60)
+        print("错误: 无法找到可用端口（5001-5010都被占用）")
+        print("=" * 60)
+        print("\n请尝试以下解决方案:")
+        print("1. 关闭其他可能占用端口的程序")
+        print("2. 重启计算机后再试")
+        print("3. 联系技术支持")
+        input("\n按回车键退出...")
+        return
+    
+    if port != 5001:
+        print(f"注意: 端口5001被占用，已自动切换到端口{port}")
+    
+    url = f"http://localhost:{port}"
+    
+    print(f"\n正在启动Web服务器...")
     print("请稍候，系统启动需要几秒钟...")
     
-    # 在后台线程中打开浏览器
-    browser_thread = threading.Thread(target=open_browser_delayed, args=("http://localhost:5001",))
+    # 在后台线程中等待服务器就绪后打开浏览器
+    browser_thread = threading.Thread(target=open_browser_when_ready, args=(url, port))
     browser_thread.daemon = True
     browser_thread.start()
     
     try:
         print("\n" + "=" * 60)
-        print("✓ 系统启动成功！")
-        print("访问地址: http://localhost:5001") 
-        print("浏览器将自动打开...")
-        print("\n提示：关闭此窗口将停止程序")
+        print("系统正在启动中...")
+        print(f"访问地址: {url}") 
+        print("浏览器将在服务器就绪后自动打开...")
+        print("\n重要提示：请不要关闭此命令行窗口！")
+        print("         关闭此窗口将停止程序运行")
         print("=" * 60 + "\n")
         
         # 启动Flask服务器
-        app.run(host='0.0.0.0', port=5001, debug=False, use_reloader=False)
+        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
         
     except KeyboardInterrupt:
         print("\n\n程序已停止")
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"\n错误: 端口{port}被占用")
+            print("请关闭占用该端口的程序后重试")
+        else:
+            print(f"\n程序运行出错: {e}")
+        import traceback
+        traceback.print_exc()
+        input("\n按回车键退出...")
     except Exception as e:
         print(f"\n程序运行出错: {e}")
         print("\n可能的解决方案:")
-        print("1. 检查端口5001是否被其他程序占用")
-        print("2. 尝试以管理员身份运行")
-        print("3. 检查防火墙设置")
+        print("1. 尝试以管理员身份运行")
+        print("2. 检查防火墙设置")
+        print("3. 检查杀毒软件是否阻止了程序")
         import traceback
         traceback.print_exc()
         input("\n按回车键退出...")
